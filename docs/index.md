@@ -3,15 +3,15 @@ pageType: home
 
 hero:
   name: Teainit
-  text: RBAC 初始化模板
+  text: RBAC 模型初始模板
   tagline: 
   actions:
     - theme: brand
-      text: Quick Start
+      text: 快速开始
       link: /guide/
     - theme: alt
       text: Github
-      link: https://github.com/web-infra-dev/rspress
+      link: https://github.com/tea-inn/teainit-frontend
   image:
     src: /teainit-icon.png
     alt: 茶初 Logo

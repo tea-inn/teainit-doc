@@ -1,210 +1,104 @@
-# Markdown & MDX
+# 快速开始
 
-Rspress supports not only Markdown but also [MDX](https://mdxjs.com/), a powerful way to develop content.
+## 本地启动
 
-## Markdown
+拉取代码
 
-MDX is a superset of Markdown, which means you can write Markdown files as usual. For example:
-
-```md
-# Hello World
+```git
+git clone https://github.com/tea-inn/teainit-frontend
 ```
 
-## Use Component
+安装依赖
 
-When you want to use React components in Markdown files, you should name your files with `.mdx` extension. For example:
-
-```mdx
-// docs/index.mdx
-import { CustomComponent } from './custom';
-
-# Hello World
-
-<CustomComponent />
+```sh
+npm install
 ```
 
-## Front Matter
+启动
 
-You can add Front Matter at the beginning of your Markdown file, which is a YAML-formatted object that defines some metadata. For example:
-
-```yaml
----
-title: Hello World
----
+```sh
+npm run dev
 ```
 
-> Note: By default, Rspress uses h1 headings as html headings.
+访问地址：http://localhost:8000
 
-You can also access properties defined in Front Matter in the body, for example:
+## 使用
 
-```markdown
----
-title: Hello World
----
+### 请求方式
 
-# {frontmatter.title}
-```
+请求方式不写在 `requestConfig` 中了，在 proxy 中配置。
 
-The previously defined properties will be passed to the component as `frontmatter` properties. So the final output will be:
+部署时就不需要改动，还可以配置其他环境，写在  `requestConfig` 中部署时就需要改为 `baseURL: ''`，部署完成需要重新改回来，会麻烦一些。
 
-```html
-<h1>Hello World</h1>
-```
+![image-20240201171330702](http://cdn.teainn.top/img/image-20240201171330702.png)
 
-## Custom Container
+![image-20240201171038718](http://cdn.teainn.top/img/image-20240201171038718.png)
 
-You can use the `:::` syntax to create custom containers and support custom titles. For example:
+### 请求响应拦截处理
 
-**Input:**
+请求拦截，主要添加了请求头中的 token，后端用的是 `sa-token` 判断登录逻辑
 
-```markdown
-:::tip
-This is a `block` of type `tip`
-:::
+![image-20240201171720095](http://cdn.teainn.top/img/image-20240201171720095.png)
 
-:::info
-This is a `block` of type `info`
-:::
+响应拦截
 
-:::warning
-This is a `block` of type `warning`
-:::
+里面 `data` 返回了后端返回的真实内容，不过需要 `return response`，而不是 `return data` ，return 出去的数据框架会去拿里面的 data
 
-:::danger
-This is a `block` of type `danger`
-:::
+![image-20240201171834163](http://cdn.teainn.top/img/image-20240201171834163.png)
 
-::: details
-This is a `block` of type `details`
-:::
+这里抛出异常，异常处理也在 `config.ts` 中配置
 
-:::tip Custom Title
-This is a `block` of `Custom Title`
-:::
+这里的方法是上面 `requestConfig.errorConfig` 调用的，将抛出的异常封装为 `BizError` ，然后继续抛出
 
-:::tip{title="Custom Title"}
-This is a `block` of `Custom Title`
-:::
-```
+![image-20240201172118977](http://cdn.teainn.top/img/image-20240201172118977.png)
 
-**Output:**
+来到 `errorHandler`  这里处理异常，主要讲这个 `message` ，因为 `message` 是一个静态方法，没有组件直接使用会报错，可以使用 `useMessge` 或者 `useApp` 去处理，不过 `ts` 中就不知道了
 
-:::tip
-This is a `block` of type `tip`
-:::
+这里并不会捕获异常，在具体页面请求时，请求方法还是需要用 `try catch` 去捕获的
 
-:::info
-This is a `block` of type `info`
-:::
+![image-20240201172905151](http://cdn.teainn.top/img/image-20240201172905151.png)
 
-:::warning
-This is a `block` of type `warning`
-:::
+![image-20240201173332378](http://cdn.teainn.top/img/image-20240201173332378.png)
 
-:::danger
-This is a `block` of type `danger`
-:::
+### 权限控制
 
-::: details
-This is a `block` of type `details`
-:::
+在 `app.tsx` 中，每一次加载页面都会去拿 `CurrentUserVO`，里面存在 `perms` ，也就是权限，之后存入 `InitialState` 中
 
-:::tip Custom Title
-This is a `block` of `Custom Title`
-:::
+![image-20240201173900511](http://cdn.teainn.top/img/image-20240201173900511.png)
 
-:::tip{title="Custom Title"}
-This is a `block` of `Custom Title`
-:::
+在 `access.ts` 中去定义权限标识，在路由中和组件中使用
 
-## Code Block
+![image-20240201174042725](http://cdn.teainn.top/img/image-20240201174042725.png)
 
-### Basic Usage
+在路由中，使用 `access: xxx`，例如`access: 'canSystemUserView',`
 
-You can use the \`\`\` syntax to create code blocks and support custom titles. For example:
+![image-20240201174132110](http://cdn.teainn.top/img/image-20240201174132110.png)
 
-**Input:**
+在组件中使用，例子 `<Access accessible={access.canSystemUserAdd || false}>`
 
-````md
-```js
-console.log('Hello World');
-```
+![image-20240201174226442](http://cdn.teainn.top/img/image-20240201174226442.png)
 
-```js title="hello.js"
-console.log('Hello World');
-```
-````
+### openAPI 问题
 
-**Output:**
+`openAPI` 会将类属性 `Long` 类型的转为 string，在 `.json` 中 int 为 int32，long 为 int64，然后将 int64 变为了 string，这会影响到后面在传参数时 ts 校验不通过，类型不一致，number 无法赋值给 string
 
-```js
-console.log('Hello World');
-```
+![image-20240201174414881](http://cdn.teainn.top/img/image-20240201174414881.png)
 
-```js title="hello.js"
-console.log('Hello World');
-```
+![image-20240201174719895](http://cdn.teainn.top/img/image-20240201174719895.png)
 
-### Show Line Numbers
+我想将 string 改为 number，但下一次生成又会是 string，如果我把 total，current 这些原本是 number 的改为 string，我也感觉不太好，本就是 number，所有最后我直接 `// @ts-ignore`
 
-If you want to display line numbers, you can enable the `showLineNumbers` option in the config file:
+这里再说一下结构赋值的问题，因为 openAPI 里面设置的返回类型是 `BaseResponsexxx` ，所以如果你在响应拦截中直接返回了 `data` 这里就会不一致，真正的数据类型和定义的不一致，所以我再响应拦截中直接返回，在这里使用结构赋值拿到 data，再重命名
 
-```ts title="rspress.config.ts"
-export default {
-  // ...
-  markdown: {
-    showLineNumbers: true,
-  },
-};
-```
+![image-20240201174910976](http://cdn.teainn.top/img/image-20240201174910976.png)
 
-### Wrap Code
+### 适配
 
-If you want to wrap long code line by default, you can enable the `defaultWrapCode` option in the config file:
+在 `ProTable` 中使用 `scroll` 可以提高手机对表格的适配，就不会出现手机端查看的时候，表格中字段挤在一起，无法正常使用
 
-```ts title="rspress.config.ts"
-export default {
-  // ...
-  markdown: {
-    defaultWrapCode: true,
-  },
-};
-```
+![image-20240201175229831](http://cdn.teainn.top/img/image-20240201175229831.png)
 
-### Line Highlighting
+效果
 
-You can also apply line highlighting and code block title at the same time, for example:
+![image-20240201175411411](http://cdn.teainn.top/img/image-20240201175411411.png)
 
-**Input:**
-
-````md
-```js title="hello.js" {1,3-5}
-console.log('Hello World');
-
-const a = 1;
-
-console.log(a);
-
-const b = 2;
-
-console.log(b);
-```
-````
-
-**Ouput:**
-
-```js title="hello.js" {1,3-5}
-console.log('Hello World');
-
-const a = 1;
-
-console.log(a);
-
-const b = 2;
-
-console.log(b);
-```
-
-## Rustify MDX compiler
-
-You can enable Rustify MDX compiler by following config:
